@@ -86,10 +86,13 @@
             <input type="number" id="answer" placeholder="Your answer">
             <button onclick="checkAnswer()" id="submitButton">Submit</button>
             <p id="feedback" class="feedback"></p>
+            <p id="timer">Time: 00:00</p>
         </div>
         
         <div id="result" style="display:none;">
             <h2 id="score"></h2>
+            <p id="totalTime"></p>
+            <p id="averageTime"></p>
             <button onclick="window.location.reload()">New Quiz</button>
             <button onclick="window.print()">Print Score</button>
         </div>
@@ -97,7 +100,8 @@
     
     <script>
         let num1, num2, correctAnswer, score, currentQuestion, totalQuestions, operations;
-        
+        let startTime, questionTimes = [];
+
         function startQuiz() {
             let digits1 = parseInt(document.getElementById('digits1').value);
             let digits2 = parseInt(document.getElementById('digits2').value);
@@ -116,6 +120,7 @@
             
             score = 0;
             currentQuestion = 0;
+            questionTimes = [];
             document.getElementById('setup').style.display = 'none';
             document.getElementById('result').style.display = 'none';
             document.getElementById('quiz').style.display = 'block';
@@ -128,7 +133,11 @@
             if (currentQuestion >= totalQuestions) {
                 document.getElementById('quiz').style.display = 'none';
                 document.getElementById('result').style.display = 'block';
+                let totalTime = questionTimes.reduce((sum, time) => sum + time, 0);
+                let averageTime = totalTime / totalQuestions;
                 document.getElementById('score').innerText = `Your Score: ${score} / ${totalQuestions}`;
+                document.getElementById('totalTime').innerText = `Total Time: ${formatTime(totalTime)}`;
+                document.getElementById('averageTime').innerText = `Average Time per Question: ${formatTime(averageTime)}`;
                 return;
             }
             
@@ -151,16 +160,39 @@
             document.getElementById('question').innerText = `${num1} ${operation} ${num2} = ?`;
             document.getElementById('answer').value = '';
             document.getElementById('answer').focus();
+            
+            startTime = Date.now();  // Start the timer for this question
+            updateTimer();
+        }
+
+        function updateTimer() {
+            let elapsed = Date.now() - startTime;
+            let seconds = Math.floor(elapsed / 1000);
+            let minutes = Math.floor(seconds / 60);
+            seconds = seconds % 60;
+            document.getElementById('timer').innerText = `Time: ${formatTime(elapsed / 1000)}`;
+            if (currentQuestion < totalQuestions) {
+                requestAnimationFrame(updateTimer);
+            }
+        }
+
+        function formatTime(timeInSeconds) {
+            let minutes = Math.floor(timeInSeconds / 60);
+            let seconds = Math.floor(timeInSeconds % 60);
+            return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
         
         function checkAnswer() {
             let userAnswer = parseInt(document.getElementById('answer').value);
             let feedback = document.getElementById('feedback');
+            let timeTaken = (Date.now() - startTime) / 1000;  // Time in seconds
+            questionTimes.push(timeTaken);
             feedback.innerText = userAnswer === correctAnswer ? 'Correct!' : 'Wrong!';
             feedback.className = userAnswer === correctAnswer ? 'feedback correct' : 'feedback wrong';
             if (userAnswer === correctAnswer) score++;
             setTimeout(() => { feedback.innerText = ''; currentQuestion++; generateQuestion(parseInt(document.getElementById('digits1').value), parseInt(document.getElementById('digits2').value)); }, 2000);
         }
+
         document.addEventListener("DOMContentLoaded", function () {
             const answer = document.getElementById("answer");
             const submitButton = document.getElementById("submitButton");
